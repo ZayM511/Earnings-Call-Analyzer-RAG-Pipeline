@@ -66,7 +66,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS chunks_unique_per_call_idx
 
 CREATE TABLE IF NOT EXISTS ingest_audit (
     id            SERIAL PRIMARY KEY,
-    source        VARCHAR(40) NOT NULL,
+    source        VARCHAR(120) NOT NULL,
     url           TEXT,
     ticker        VARCHAR(10),
     year          INT,
@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS ingest_audit (
     content_sha256 CHAR(64),
     fetched_at    TIMESTAMPTZ DEFAULT NOW()
 );
+-- Widen older source columns if the column already existed at a narrower size.
+ALTER TABLE ingest_audit ALTER COLUMN source TYPE VARCHAR(120);
 """
 
 

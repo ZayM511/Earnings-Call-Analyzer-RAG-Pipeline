@@ -36,6 +36,19 @@ OBSERVABILITY: Braintrust logs every retrieval + LLM call; 30-query stratified
 eval set (single_call / multi_quarter / cross_company) tracks recall@5 + MRR.
 ```
 
+## Corpus
+
+| | |
+|---|---|
+| **Companies** | Mag 7 (AAPL, MSFT, GOOGL/GOOG, AMZN, META, NVDA, TSLA) |
+| **Window** | Calls reported Q2 2024 → Q1 2026 |
+| **Transcripts ingested** | 41 (target was 56; gaps where the upstream dataset didn't have the call) |
+| **Per-company coverage** | AAPL 4, MSFT 7, Alphabet 7 (GOOGL 5 + GOOG 2), AMZN 6, META 4, NVDA 6, TSLA 7 |
+| **Source** | HuggingFace `Rogersurf/earnings-call-transcripts` (scraped from Motley Fool, redistributed) |
+| **Total chunks** | ~6,300 expected after speaker-aware chunking (Phase 5) |
+
+Run `uv run python -m src.ingest summary` to print the coverage table from disk. The 41 transcripts live as `data/raw/{TICKER}_{YYYY}_{Q#}.json` files and a row per call in the `ingest_audit` Postgres table (LLM04 — data provenance).
+
 ## Sample queries (planned)
 
 These run end-to-end once the pipeline is ingested. Each will get a real screenshot in the README.
@@ -101,6 +114,8 @@ The README will publish three experiment screenshots once the pipeline lands:
 ## What I tried and rejected
 
 - **Fixed-character chunking.** The tutorial default. Tried it on a single Apple call as a smoke test, then dropped it — paragraph cuts mid-sentence destroyed the Q&A → answer pairing that makes the corpus useful. Speaker-aware chunking with a 200-token floor preserves the structure.
+- **The legacy `jlh-ibm/earnings_call` HuggingFace dataset.** Stops at 2020 and uses a deprecated dataset-script format that the current `datasets` library refuses to load. Doesn't cover any of our Mag 7 + 2024-2026 window. Switched to `Rogersurf/earnings-call-transcripts`, which ships a parquet (no scripts) and covers 9,069 calls including ours.
+- **Live Motley Fool scraping.** Was the original fallback plan. Tested it during ingest research and hit 429 rate limits within a handful of requests, plus they don't have transcripts for every Mag 7 quarter (no Apple FQ1 2024 in their indexed sitemaps). Static HF dataset is far more reliable.
 - **Routing stats vs prose like the sibling NBA project.** Considered it. Earnings calls don't have a separate numeric source (the financial tables live inside the prepared remarks as English sentences); there's no second source of truth to route to. One unified pipeline is the right choice here. The architectural split shows up in the sibling NBA repo.
 - **Importing the voyageai Python SDK.** It fails to import on Python 3.14 due to a pydantic-v1 + `min_items` issue in `multimodal_embeddings`. Pinned to REST API calls in `src/embed/voyage_rest_client.py` instead — same wire protocol, no SDK dependency.
 
@@ -125,8 +140,12 @@ uv sync
 # 4. Apply the schema.
 uv run python -m src.index.schema
 
-# 5. (next phase) Ingest the 56 Mag 7 transcripts.
-uv run python -m src.ingest --all-mag7
+# 5. Ingest the Mag 7 transcripts from HuggingFace.
+uv run python -m src.ingest all-mag7
+# Or one at a time:
+uv run python -m src.ingest one --ticker AAPL --year 2024 --quarter Q4
+# Or summarize what's on disk:
+uv run python -m src.ingest summary
 
 # Run the tests.
 uv run pytest -q
@@ -155,7 +174,7 @@ uv run pytest -q
 ├── src/                       the actual code
 │   ├── config.py              pydantic-settings, central env-var validation
 │   ├── guardrails.py          LLM10 caps + cost ceiling + cascade + sanitizer
-│   ├── ingest/                HF datasets + Motley Fool scraper
+│   ├── ingest/                Rogersurf HF dataset loader + parser + audit log + CLI
 │   ├── chunk/                 speaker-aware chunker + contextual prefix
 │   ├── embed/                 Voyage REST client
 │   ├── enrich/                Claude Sonnet 4.5 hedging/sentiment/topics extractor
