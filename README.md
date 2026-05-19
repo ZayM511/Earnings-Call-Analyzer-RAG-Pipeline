@@ -53,6 +53,8 @@ eval set (single_call / multi_quarter / cross_company) tracks recall@5 + MRR.
 | **Top topics** | ai infrastructure (74), ai capex (48), revenue growth (44), operating margin (41), blackwell ramp (33), ai monetization (33), apple intelligence (29), azure growth (29), aws growth (22), fsd progress (20) |
 | **Embeddings** | 1,097 / 1,097 chunks embedded with `voyage-finance-2` (1024-dim), contextual-retrieval prefix applied at embed time only |
 | **Vector index** | HNSW (`vector_cosine_ops`) on `chunks.embedding`. Sample dense query latency: 6.5 ms cold (planner currently picks seq scan at this corpus size; HNSW wins above ~10K rows) |
+| **Retrieval** | Hybrid: BM25 (`ts_rank` over GIN tsvector) + dense (pgvector `<=>`) → RRF merge → Cohere Rerank 3.5 → top 5–10. Metadata pre-filters on ticker / year / quarter / section / role / hedging / topics. |
+| **Synthesis** | Claude Opus 4.6 with inline citations like `[AAPL Q4 2024, Tim Cook]`. Retrieved chunks sanitized via `guardrails.sanitize_retrieved_chunk` before injection (OWASP LLM01 / LLM08). Typical end-to-end query: ~2–4K input + ~300–900 output tokens, ~$0.05–0.12, 8–20s. |
 
 Run `uv run python -m src.ingest summary` to print the coverage table from disk. The 41 transcripts live as `data/raw/{TICKER}_{YYYY}_{Q#}.json` files and a row per call in the `ingest_audit` Postgres table (LLM04 — data provenance).
 
