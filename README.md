@@ -51,6 +51,8 @@ eval set (single_call / multi_quarter / cross_company) tracks recall@5 + MRR.
 | **Hedging by section** | Q&A 0.326 / Prepared 0.199 (Q&A is 64% higher — execs hedge more during live questions) |
 | **Sentiment** | Positive 849 / Neutral 240 / Negative 8 |
 | **Top topics** | ai infrastructure (74), ai capex (48), revenue growth (44), operating margin (41), blackwell ramp (33), ai monetization (33), apple intelligence (29), azure growth (29), aws growth (22), fsd progress (20) |
+| **Embeddings** | 1,097 / 1,097 chunks embedded with `voyage-finance-2` (1024-dim), contextual-retrieval prefix applied at embed time only |
+| **Vector index** | HNSW (`vector_cosine_ops`) on `chunks.embedding`. Sample dense query latency: 6.5 ms cold (planner currently picks seq scan at this corpus size; HNSW wins above ~10K rows) |
 
 Run `uv run python -m src.ingest summary` to print the coverage table from disk. The 41 transcripts live as `data/raw/{TICKER}_{YYYY}_{Q#}.json` files and a row per call in the `ingest_audit` Postgres table (LLM04 — data provenance).
 
