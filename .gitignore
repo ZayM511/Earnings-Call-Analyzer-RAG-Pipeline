@@ -116,6 +116,7 @@ out/
 test-results/
 playwright-report/
 playwright/.cache/
+.playwright-mcp/
 
 # --- Notebook checkpoints ---
 .ipynb_checkpoints/
@@ -123,3 +124,4 @@ playwright/.cache/
 # --- Local Claude state (if any tools write here) ---
 .claude/local/
 .claude/state/
+.claude/scheduled_tasks.lock

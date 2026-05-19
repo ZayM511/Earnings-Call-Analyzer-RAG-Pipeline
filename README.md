@@ -2,8 +2,29 @@
 
 A hybrid-retrieval RAG system over Mag 7 quarterly earnings call transcripts (Q2 2024 → Q1 2026). Splits transcripts at speaker turns instead of fixed character counts, enriches every chunk with a Claude-extracted hedging score and topic tags, and answers analytical questions like *"Where did Apple's CFO start hedging on guidance?"* or *"Compare how Apple and Google describe China risk."*
 
-> **Loom demo:** (recording pending — runs after the UI phase)
+> **Loom demo:** (recording pending)
 > **Live demo:** (deploy pending — Vercel URL goes here)
+
+## UI
+
+Next.js 15 + shadcn/ui v4 (hand-rolled primitives, Tailwind v4) + Framer Motion. Two routes:
+
+| Route | Purpose |
+|---|---|
+| `/` | Ask a single question with optional ticker / year / quarter filters; renders the synthesis answer with hoverable citation chips |
+| `/compare` | Side-by-side comparison — same question across 2–4 columns, each pinned to a different Mag 7 ticker |
+
+![Landing page with sample chips and filter bar](./docs/screenshots/01-landing.png)
+*Landing — ticker / year / quarter filters across the top, four sample-question chips, ask input.*
+
+![Synthesized answer with inline citation chips](./docs/screenshots/02-answer-with-citations.png)
+*Answer view — Claude Opus 4.6 synthesis with inline citation chips. Each chip carries ticker + quarter + speaker; hovering reveals the supporting chunk quote.*
+
+![Citation chip hovered, revealing the supporting Tim Cook chunk](./docs/screenshots/03-citation-hover.png)
+*Citation chip on hover — the supporting chunk text in a serif blockquote with role / section / hedging-score metadata above.*
+
+![Side-by-side compare view across MSFT, GOOGL, AMZN](./docs/screenshots/05-compare-filled.png)
+*Compare view — one question, three Mag 7 companies, three independent synthesis calls. Per-column citation chips and cost / latency badges.*
 
 ## Architecture
 
@@ -166,6 +187,16 @@ uv run python -m src.ingest all-mag7
 uv run python -m src.ingest one --ticker AAPL --year 2024 --quarter Q4
 # Or summarize what's on disk:
 uv run python -m src.ingest summary
+
+# 6. Chunk → enrich → embed → eval (one-time, ~10 minutes total)
+uv run python -m src.chunk all
+uv run python -m src.enrich --concurrency 8
+uv run python -m src.embed all
+uv run python -m src.eval --name baseline
+
+# 7. Run the demo (two terminals)
+uv run uvicorn src.api.server:app --port 8001       # backend
+cd ui && npm install && npm run dev                  # frontend on http://localhost:3000
 
 # Run the tests.
 uv run pytest -q
