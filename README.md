@@ -45,7 +45,9 @@ eval set (single_call / multi_quarter / cross_company) tracks recall@5 + MRR.
 | **Transcripts ingested** | 41 (target was 56; gaps where the upstream dataset didn't have the call) |
 | **Per-company coverage** | AAPL 4, MSFT 7, Alphabet 7 (GOOGL 5 + GOOG 2), AMZN 6, META 4, NVDA 6, TSLA 7 |
 | **Source** | HuggingFace `Rogersurf/earnings-call-transcripts` (scraped from Motley Fool, redistributed) |
-| **Total chunks** | ~6,300 expected after speaker-aware chunking (Phase 5) |
+| **Total chunks** | **1,097** speaker-aware chunks (mean 444 tokens, p50=439, p90=616) |
+| **Role distribution** | CEO 449, CFO 317, Analyst 210, Other 89, IR 32 (Operator content folded into adjacent turns) |
+| **Section split** | Q&A 678 / Prepared 419 (62/38 — typical for an earnings call) |
 
 Run `uv run python -m src.ingest summary` to print the coverage table from disk. The 41 transcripts live as `data/raw/{TICKER}_{YYYY}_{Q#}.json` files and a row per call in the `ingest_audit` Postgres table (LLM04 — data provenance).
 
