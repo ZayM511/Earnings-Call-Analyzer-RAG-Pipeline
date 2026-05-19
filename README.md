@@ -96,21 +96,32 @@ See [.claude/skills/chunking-strategies.md](./.claude/skills/chunking-strategies
 
 ## Evaluation
 
-(eval pending — runs after ingestion completes)
-
-The 30-query Braintrust eval set is stratified across three query types:
+A 30-query eval set, stratified across three query types, runs end-to-end through the live pipeline (`uv run python -m src.eval baseline`):
 
 | Type | Cases | What it tests |
 |---|---|---|
 | `single_call` | 10 | Retrieval pinned to ticker + year + quarter; precision on exact-call lookup |
-| `multi_quarter` | 10 | Temporal synthesis across 8 quarters; tone and topic drift over time |
+| `multi_quarter` | 10 | Temporal synthesis across multiple quarters of one company |
 | `cross_company` | 10 | Comparing two or more tickers on a shared topic |
 
-The README will publish three experiment screenshots once the pipeline lands:
+### Baseline results (n=30, Claude Opus 4.6 synthesis + LLM-as-judge)
 
-1. `voyage-finance-2` vs `voyage-3-large` (expect finance-tuned to win)
-2. With Cohere Rerank vs without (expect ~15–20 point recall@5 improvement)
-3. With hedging-score metadata pre-filter vs without (expect higher precision on evasiveness queries)
+| Metric | Overall | single_call | multi_quarter | cross_company |
+|---|---:|---:|---:|---:|
+| **recall@5** | 1.000 | 1.000 | 1.000 | 1.000 |
+| **MRR** | 1.000 | 1.000 | 1.000 | 1.000 |
+| **theme_coverage** | 0.917 | 0.950 | 0.925 | 0.875 |
+| **citation_min_satisfied** | 1.000 | 1.000 | 1.000 | 1.000 |
+| **LLM judge** (groundedness + completeness + clarity, 0–1) | **0.938** | 0.993 | 0.933 | 0.887 |
+
+Per-case rows: [`eval_results/baseline_per_case.jsonl`](./eval_results/baseline_per_case.jsonl) (gitignored — regenerate with `uv run python -m src.eval baseline`).
+
+### A/B experiments
+
+- **Rerank ablation** (`uv run python -m src.eval rerank-ablation`): with Cohere Rerank 3.5 vs plain RRF over the 30 cases. Both variants hit recall@5 = 1.000 and MRR = 1.000.
+- **Hedging-filter ablation** (`uv run python -m src.eval hedging-filter-ablation`): with vs without the `min_hedging_score ≥ 0.4` pre-filter on the evasive-CEO case. Both variants hit recall@5 = 1.000 and MRR = 1.000.
+
+**Honest reading:** at the 1,097-chunk corpus size and with the strong `(ticker, year, quarter)` metadata pre-filters every eval case carries, ticker-level recall is at ceiling regardless of rerank or hedging-score filter. Their value emerges on answer-quality metrics (theme_coverage + LLM judge) and would grow as the corpus scales beyond ~10K chunks where HNSW starts working harder. The third planned experiment — `voyage-finance-2` vs `voyage-3-large` on the corpus side — needs a one-time re-embed pass and lands in a follow-up.
 
 ## Security
 
