@@ -17,6 +17,7 @@ Run with:
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import asdict
 from typing import Any
 
@@ -41,15 +42,26 @@ app = FastAPI(
     description="Hybrid RAG over Mag 7 quarterly earnings call transcripts.",
 )
 
-# Permissive CORS for local dev. Lock down in production.
+# Allowed origins: local dev by default. In production set
+# CORS_ALLOW_ORIGINS=https://<your-vercel-domain>,https://<another> as a
+# comma-separated list, OR `*` for a fully public demo.
+_DEFAULT_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
+_env_origins = os.environ.get("CORS_ALLOW_ORIGINS", "").strip()
+if _env_origins == "*":
+    _allow_origins = ["*"]
+elif _env_origins:
+    _allow_origins = [o.strip() for o in _env_origins.split(",") if o.strip()]
+else:
+    _allow_origins = _DEFAULT_ORIGINS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-    ],
+    allow_origins=_allow_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
