@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     # --- Guardrails (LLM10) ---
     max_input_tokens_per_query: int = Field(8000, alias="MAX_INPUT_TOKENS_PER_QUERY")
     max_output_tokens_per_query: int = Field(2000, alias="MAX_OUTPUT_TOKENS_PER_QUERY")
-    session_cost_ceiling_usd: float = Field(0.50, alias="SESSION_COST_CEILING_USD")
+    session_cost_ceiling_usd: float = Field(3.00, alias="SESSION_COST_CEILING_USD")
     hourly_cost_circuit_breaker_usd: float = Field(
         5.00, alias="HOURLY_COST_CIRCUIT_BREAKER_USD"
     )

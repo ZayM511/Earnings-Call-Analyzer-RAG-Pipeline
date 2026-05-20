@@ -30,7 +30,7 @@ Out of scope:
 | LLM07 | System prompt leakage | Yes | Credentials never go in system prompts. System prompts may be considered exfiltratable; we treat them as such. |
 | LLM08 | Vector and embedding weaknesses | Yes | The central RAG risk. Indirect injection via poisoned chunks is mitigated at retrieval time. Embeddings are stored alongside source text and hash, so we can detect tampering. |
 | LLM09 | Misinformation | Yes | Every factual claim in an answer requires a citation in the format `[TICKER QQ YYYY, Speaker Name]`. The eval set includes "answer-must-cite" checks. The UI surfaces sources prominently so users can verify. |
-| LLM10 | Unbounded consumption | Yes | Per-query token cap (8K input, 2K output), per-session cost ceiling ($0.50), aggregate hourly circuit breaker ($5), Haiku→Sonnet→Opus cascade. All centralized in `src/guardrails.py`. |
+| LLM10 | Unbounded consumption | Yes | Per-query token cap (8K input, 2K output), per-session cost ceiling ($3.00), aggregate hourly circuit breaker ($5), Haiku→Sonnet→Opus cascade. All centralized in `src/guardrails.py`. |
 
 ## Defense-in-depth layers
 

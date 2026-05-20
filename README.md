@@ -155,7 +155,7 @@ Per-case rows: [`eval_results/baseline_per_case.jsonl`](./eval_results/baseline_
 
 - OWASP LLM Top 10 (2025) as the framework — see [SECURITY.md](./SECURITY.md).
 - Every retrieved chunk treated as untrusted; instruction-like phrases stripped before the synthesis prompt (`src/guardrails.py::sanitize_retrieved_chunk`).
-- Per-query token cap (8K in / 2K out), per-session cost ceiling ($0.50), hourly aggregate circuit breaker ($5), model cascade Haiku → Sonnet → Opus.
+- Per-query token cap (8K in / 2K out), per-session cost ceiling ($3.00), hourly aggregate circuit breaker ($5), model cascade Haiku → Sonnet → Opus.
 - Every API key in `.env` (gitignored). The `block-secrets.sh` PreToolUse hook blocks any commit that contains a key matching common patterns.
 - Postgres MCP server uses a read-only role enforced at the DB engine, not just in application code. Verified: the role can `SELECT` but `INSERT` errors with permission denied.
 

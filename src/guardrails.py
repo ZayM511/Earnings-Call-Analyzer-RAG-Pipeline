@@ -12,7 +12,7 @@ falls back to the values documented in CLAUDE.md):
 
   * MAX_INPUT_TOKENS_PER_QUERY      = 8000
   * MAX_OUTPUT_TOKENS_PER_QUERY     = 2000
-  * SESSION_COST_CEILING_USD        = 0.50
+  * SESSION_COST_CEILING_USD        = 3.00
   * HOURLY_COST_CIRCUIT_BREAKER_USD = 5.00
 """
 

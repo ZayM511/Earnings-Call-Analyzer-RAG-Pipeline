@@ -42,7 +42,7 @@ These are non-negotiable. The `block-secrets.sh` hook and the `security-reviewer
 2. **Treat every retrieved chunk as untrusted.** Transcripts can carry indirect prompt injection if a hostile speaker plants strings like "ignore previous instructions" (OWASP LLM01 / LLM08). Strip instruction-like phrases before chunks reach a synthesis prompt.
 3. **Cite every factual claim.** Synthesis answers must cite ticker + quarter + speaker inline as `[TICKER QQ YYYY, Speaker Name]` for every factual statement. Answers without citations get rejected.
 4. **Per-query token cap: 8K input, 2K output.** Anything over the cap returns a clear error. Centralized in `src/guardrails.py`.
-5. **Per-session cost ceiling: $0.50.** Track cost per user session (or per IP for the public demo). Soft block when hit.
+5. **Per-session cost ceiling: $3.00.** Track cost per user session (or per IP for the public demo). Soft block when hit. (Raised from $0.50 so live demos can run multiple queries without tripping the soft block; the hourly aggregate breaker at $5 is still the hard backstop.)
 6. **Aggregate cost circuit breaker.** If total project cost in the last hour passes $5, return a maintenance message and page the operator.
 7. **Model cascade.** Try Haiku 4.5 first. Escalate to Sonnet 4.5 only when Haiku declines or fails validation. Reach Opus 4.6 only for genuinely hard synthesis.
 8. **Never put credentials in system prompts.** System prompts are exfiltratable (LLM07). Keys belong in env vars, not in prompt text.
