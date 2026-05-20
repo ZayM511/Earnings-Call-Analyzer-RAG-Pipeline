@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,14 +22,19 @@ export function SiteHeader() {
           className="flex items-center gap-3 shrink-0"
           aria-label="Earnings Call Analyzer home"
         >
-          <Image
-            src="/earnings-call-icon.png"
-            alt=""
-            width={32}
-            height={32}
-            priority
-            className="size-8 dark:invert-0 select-none"
-          />
+          <span
+            aria-hidden="true"
+            className="relative inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-(--accent) ring-1 ring-(--accent)/40 shadow-sm"
+          >
+            <Image
+              src="/earnings-call-icon.png"
+              alt=""
+              width={32}
+              height={32}
+              priority
+              className="size-8 object-contain select-none mix-blend-multiply"
+            />
+          </span>
           <div className="flex flex-col leading-tight">
             <span className="text-base font-semibold tracking-tight text-(--foreground)">
               Earnings Call Analyzer
@@ -58,6 +64,7 @@ export function SiteHeader() {
           >
             GitHub
           </a>
+          <ThemeToggle />
         </nav>
       </div>
     </header>

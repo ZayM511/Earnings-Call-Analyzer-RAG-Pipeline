@@ -123,12 +123,26 @@ export function PipelineTrace({
     !!filters &&
     ((filters.tickers && filters.tickers.length > 0) || filters.year !== undefined || filters.quarter !== undefined);
 
+  // Fire a one-time celebration animation on the `running` -> `done` transition.
+  const [justFinished, setJustFinished] = React.useState(false);
+  const prevState = React.useRef<TraceState>(state);
+  React.useEffect(() => {
+    if (prevState.current === "running" && state === "done") {
+      setJustFinished(true);
+      const t = window.setTimeout(() => setJustFinished(false), 900);
+      prevState.current = state;
+      return () => window.clearTimeout(t);
+    }
+    prevState.current = state;
+  }, [state]);
+
   return (
     <div
       data-testid="pipeline-trace"
       data-state={state}
       className={cn(
-        "rounded-xl border border-(--border) bg-(--card)/70 p-4 md:p-5 backdrop-blur-sm",
+        "relative overflow-hidden rounded-xl border border-(--border) bg-(--card)/70 p-4 md:p-5 backdrop-blur-sm",
+        "lg:[&_ol]:[mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)]",
         className,
       )}
     >
@@ -144,7 +158,7 @@ export function PipelineTrace({
       </div>
 
       <ol
-        className="flex flex-col lg:flex-row lg:items-stretch gap-2 lg:gap-1.5"
+        className="flex flex-col lg:flex-row lg:flex-nowrap lg:items-stretch gap-2 lg:gap-1.5 lg:overflow-x-auto lg:pb-1.5 lg:-mx-1 lg:px-1 scroll-smooth"
         aria-label="RAG pipeline stages"
       >
         {STAGES.map((stage, idx) => {
@@ -168,12 +182,29 @@ export function PipelineTrace({
                 index={idx}
                 status={status}
                 reduce={!!reduce}
+                isFinal={justFinished && idx === STAGES.length - 1}
               />
               {idx < STAGES.length - 1 && <ArrowBetween status={status} />}
             </React.Fragment>
           );
         })}
       </ol>
+
+      {/* Success sweep — single left→right pass on running -> done transition. */}
+      {justFinished && !reduce && (
+        <motion.div
+          aria-hidden="true"
+          initial={{ x: "-40%", opacity: 0 }}
+          animate={{ x: "120%", opacity: [0, 0.6, 0] }}
+          transition={{ duration: 0.75, ease: "easeOut" }}
+          className="pointer-events-none absolute inset-y-0 left-0 w-1/3"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent 0%, oklch(0.62 0.20 145 / 0.22) 50%, transparent 100%)",
+            mixBlendMode: "screen",
+          }}
+        />
+      )}
 
       {/* Metadata pre-filter callout — sits below stage 2. */}
       {showFilters && (
@@ -213,11 +244,13 @@ function StageCard({
   index,
   status,
   reduce,
+  isFinal,
 }: {
   stage: StageDef;
   index: number;
   status: "pending" | "active" | "done";
   reduce: boolean;
+  isFinal: boolean;
 }) {
   const { hue, ring } = stage.tone;
   const isActive = status === "active";
@@ -228,11 +261,19 @@ function StageCard({
       data-testid={`stage-${index}`}
       data-status={status}
       initial={reduce ? false : { opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: 0.04 * index }}
+      animate={
+        isFinal && !reduce
+          ? { opacity: 1, y: 0, scale: [1, 1.04, 1] }
+          : { opacity: 1, y: 0, scale: 1 }
+      }
+      transition={
+        isFinal && !reduce
+          ? { duration: 0.5, times: [0, 0.45, 1], ease: "easeOut" }
+          : { duration: 0.25, delay: 0.04 * index }
+      }
       className={cn(
-        "relative flex flex-1 min-w-[140px] flex-col gap-1 rounded-lg border bg-(--card) px-3 py-2.5 transition-all",
-        isActive && "shadow-[0_0_0_3px_var(--ring-color)]",
+        "relative flex shrink-0 lg:w-[148px] flex-col gap-1 rounded-lg border bg-(--card) px-3 py-2.5 transition-all",
+        (isActive || isFinal) && "shadow-[0_0_0_3px_var(--ring-color)]",
         status === "pending" && "opacity-55",
       )}
       style={
@@ -243,8 +284,11 @@ function StageCard({
             isActive || isDone
               ? `linear-gradient(180deg, ${hue}1a 0%, transparent 80%)`
               : undefined,
-          // ring color used by the box-shadow above (named CSS var for clean apply)
-          ["--ring-color" as string]: ring,
+          // ring color used by the box-shadow above (named CSS var for clean apply).
+          // Bump intensity briefly during the success punctuation.
+          ["--ring-color" as string]: isFinal
+            ? ring.replace("/ 0.48)", "/ 0.7)").replace("/ 0.45)", "/ 0.7)")
+            : ring,
         } as React.CSSProperties
       }
     >
@@ -288,7 +332,7 @@ function ArrowBetween({
   return (
     <li
       aria-hidden="true"
-      className="flex items-center justify-center lg:px-0.5"
+      className="flex shrink-0 items-center justify-center lg:px-0.5"
     >
       <ChevronRight
         className={cn(

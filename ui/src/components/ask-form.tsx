@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Send, Loader2 } from "lucide-react";
+import { ChevronRight, Loader2, Search, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FilterBar, type FilterState } from "@/components/filter-bar";
@@ -134,9 +134,17 @@ function AnswerCard({ result }: { result: AskResponse }) {
 
         <AnswerView result={result} />
 
-        <details className="text-xs text-(--muted-foreground)">
-          <summary className="cursor-pointer select-none hover:text-(--accent)">
-            Inspect retrieved chunks ({result.chunks.length})
+        <details className="group text-xs text-(--muted-foreground)">
+          <summary className="inline-flex w-fit items-center gap-1.5 cursor-pointer select-none rounded-md border border-(--border) bg-(--muted)/40 px-2.5 py-1.5 text-(--foreground) font-medium hover:border-(--accent)/45 hover:bg-(--accent)/10 hover:text-(--accent) transition-colors">
+            <Search className="size-3.5" aria-hidden="true" />
+            Inspect retrieved chunks
+            <span className="rounded-sm bg-(--accent)/15 px-1.5 text-[10.5px] text-(--accent) tabular-nums">
+              {result.chunks.length}
+            </span>
+            <ChevronRight
+              className="size-3.5 transition-transform duration-200 group-open:rotate-90"
+              aria-hidden="true"
+            />
           </summary>
           <div className="mt-3 space-y-2">
             {result.chunks.map((c, i) => (
