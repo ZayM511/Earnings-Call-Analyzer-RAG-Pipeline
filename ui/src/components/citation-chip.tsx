@@ -1,5 +1,6 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
 import { Building2 } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { Chunk } from "@/lib/api";
@@ -20,17 +21,20 @@ interface Props {
  */
 export function CitationChip({ ticker, quarter, year, speaker, chunk }: Props) {
   const label = `${ticker} ${quarter} ${year} · ${speaker.split(" ").slice(-1)[0]}`;
+  const reduce = useReducedMotion();
 
   return (
     <HoverCard openDelay={120} closeDelay={120}>
       <HoverCardTrigger asChild>
-        <span
-          className="inline-flex items-center gap-1 rounded-md border border-(--border) bg-(--muted)/60 px-1.5 py-0.5 text-xs font-medium text-(--muted-foreground) hover:bg-(--accent)/15 hover:text-(--accent) cursor-help mx-0.5 align-baseline whitespace-nowrap"
+        <motion.span
+          whileHover={reduce ? undefined : { y: -1 }}
+          transition={{ type: "spring", stiffness: 350, damping: 30 }}
+          className="inline-flex items-center gap-1 rounded-md border border-(--border) bg-(--muted)/60 px-1.5 py-0.5 text-xs font-medium text-(--muted-foreground) hover:bg-(--accent)/15 hover:text-(--accent) hover:border-(--accent)/30 cursor-help mx-0.5 align-baseline whitespace-nowrap"
           data-testid="citation-chip"
         >
           <Building2 className="size-3" />
           {label}
-        </span>
+        </motion.span>
       </HoverCardTrigger>
       <HoverCardContent className="w-96 max-w-[90vw]">
         <div className="space-y-2">
@@ -51,7 +55,10 @@ export function CitationChip({ ticker, quarter, year, speaker, chunk }: Props) {
                   </span>
                 )}
               </div>
-              <blockquote className="font-serif text-sm leading-relaxed text-(--foreground) border-l-2 border-(--accent) pl-3">
+              <blockquote
+                className="text-sm leading-relaxed text-(--foreground) border-l-2 border-(--accent) pl-3 italic"
+                style={{ fontFamily: "var(--font-serif), Georgia, serif" }}
+              >
                 {chunk.text.length > 360
                   ? chunk.text.slice(0, 360) + "…"
                   : chunk.text}

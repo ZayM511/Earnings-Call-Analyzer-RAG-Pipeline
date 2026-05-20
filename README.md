@@ -7,24 +7,31 @@ A hybrid-retrieval RAG system over Mag 7 quarterly earnings call transcripts (Q2
 
 ## UI
 
-Next.js 15 + shadcn/ui v4 (hand-rolled primitives, Tailwind v4) + Framer Motion. Two routes:
+Next.js 16 + shadcn-style primitives (hand-rolled on Radix + Tailwind v4) + Framer Motion. Three routes:
 
 | Route | Purpose |
 |---|---|
-| `/` | Ask a single question with optional ticker / year / quarter filters; renders the synthesis answer with hoverable citation chips |
-| `/compare` | Side-by-side comparison — same question across 2–4 columns, each pinned to a different Mag 7 ticker |
+| `/` | Ask a single question with optional ticker / year / quarter filters; renders the synthesis answer with hoverable citation chips and a live 6-stage pipeline trace |
+| `/compare` | Side-by-side comparison — same question across 2–4 columns, each pinned to a different Mag 7 ticker, with one pipeline trace per column |
+| `/how-i-made-this` | Long-form build story: architecture diagram, design brief, 11 phase commits linked to GitHub, eval results, tech stack with rationale |
 
-![Landing page with sample chips and filter bar](./docs/screenshots/01-landing.png)
-*Landing — ticker / year / quarter filters across the top, four sample-question chips, ask input.*
+![Landing page with logo, subtitle, sample chips, and filter bar](./docs/screenshots/01-landing.png)
+*Landing — branded header (logo + "By Isaiah M." credit), animated gradient headline, filters and sample chips above the ask input.*
 
-![Synthesized answer with inline citation chips](./docs/screenshots/02-answer-with-citations.png)
-*Answer view — Claude Opus 4.6 synthesis with inline citation chips. Each chip carries ticker + quarter + speaker; hovering reveals the supporting chunk quote.*
+![Live pipeline trace mid-animation with stages 1-4 done, synthesis active](./docs/screenshots/02-pipeline-trace-running.png)
+*Live trace — six stages animate while the query is in flight: User Question → BM25 + Dense → Merge → Cohere Rerank → Claude Synthesis (active, glowing) → Cited Answer. Colors match the architecture diagram on /how-i-made-this.*
 
-![Citation chip hovered, revealing the supporting Tim Cook chunk](./docs/screenshots/03-citation-hover.png)
-*Citation chip on hover — the supporting chunk text in a serif blockquote with role / section / hedging-score metadata above.*
+![Final answer with citation chips and completed pipeline trace](./docs/screenshots/03-answer-with-trace.png)
+*Completed state — trace finishes at stage 6 with model + cost + latency badges; the Markdown answer renders below with inline citation chips that reveal the supporting chunk quote on hover.*
 
 ![Side-by-side compare view across MSFT, GOOGL, AMZN](./docs/screenshots/05-compare-filled.png)
-*Compare view — one question, three Mag 7 companies, three independent synthesis calls. Per-column citation chips and cost / latency badges.*
+*Compare view — one question, three Mag 7 companies, three independent pipelines. Each column runs its own retrieval + synthesis with its own trace.*
+
+![How I Made This — hero with TL;DR card](./docs/screenshots/07-how-i-made-this-hero.png)
+*`/how-i-made-this` — the story page: TL;DR, architecture diagram, design brief, 11 phase commits linked to GitHub, eval results, tech stack with rationale.*
+
+![Static architecture diagram showing the offline + online pipeline](./docs/screenshots/08-pipeline-diagram-static.png)
+*Architecture diagram on /how-i-made-this — six-stage offline ingest band on top, six-stage online query band on the bottom, observability strip underneath. Same colour palette as the live trace.*
 
 ## Architecture
 

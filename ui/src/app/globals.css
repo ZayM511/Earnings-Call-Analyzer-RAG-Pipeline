@@ -14,13 +14,13 @@
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.55 0 0);
-  --accent: oklch(0.65 0.18 145);
+  --accent: oklch(0.62 0.20 145);
   --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.6 0.22 27);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.92 0 0);
   --input: oklch(0.92 0 0);
-  --ring: oklch(0.65 0.18 145);
+  --ring: oklch(0.62 0.20 145);
   --radius: 0.5rem;
 }
 
@@ -54,21 +54,21 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(0.16 0.005 270);
+    --background: oklch(0.155 0.008 270);
     --foreground: oklch(0.965 0 0);
-    --card: oklch(0.18 0.005 270);
+    --card: oklch(0.185 0.008 270);
     --card-foreground: oklch(0.965 0 0);
-    --popover: oklch(0.18 0.005 270);
+    --popover: oklch(0.185 0.008 270);
     --popover-foreground: oklch(0.965 0 0);
     --primary: oklch(0.985 0 0);
     --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.24 0.005 270);
+    --secondary: oklch(0.24 0.008 270);
     --secondary-foreground: oklch(0.965 0 0);
-    --muted: oklch(0.24 0.005 270);
-    --muted-foreground: oklch(0.72 0.01 270);
+    --muted: oklch(0.24 0.008 270);
+    --muted-foreground: oklch(0.72 0.012 270);
     --destructive: oklch(0.55 0.2 27);
-    --border: oklch(0.28 0.005 270);
-    --input: oklch(0.28 0.005 270);
+    --border: oklch(0.28 0.008 270);
+    --input: oklch(0.28 0.008 270);
   }
 }
 
@@ -81,4 +81,45 @@ body {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* Animated gradient sweep on landing-page H1. Honors reduced-motion. */
+.hero-headline {
+  background-image: linear-gradient(
+    90deg,
+    var(--foreground) 0%,
+    var(--foreground) 35%,
+    oklch(0.62 0.20 145) 50%,
+    var(--foreground) 65%,
+    var(--foreground) 100%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: hero-sweep 9s linear infinite;
+}
+
+@keyframes hero-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-headline {
+    animation: none;
+    background: none;
+    color: var(--foreground);
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+/* Soft dot-grid background utility — overlay on hero sections only. */
+.dot-grid-bg {
+  background-image: radial-gradient(
+    oklch(from var(--foreground) l c h / 0.06) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  background-position: -1px -1px;
 }

@@ -9,18 +9,26 @@ import { SampleChips } from "@/components/sample-chips";
 import { AnswerView } from "@/components/answer-view";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  PipelineTrace,
+  usePipelineTimeline,
+  type TraceState,
+} from "@/components/pipeline-trace";
 import { ask, type AskResponse } from "@/lib/api";
 
 export function AskForm() {
   const [question, setQuestion] = React.useState("");
   const [filters, setFilters] = React.useState<FilterState>({ tickers: [] });
-  const [loading, setLoading] = React.useState(false);
+  const [traceState, setTraceState] = React.useState<TraceState>("idle");
   const [error, setError] = React.useState<string | null>(null);
   const [result, setResult] = React.useState<AskResponse | null>(null);
+  const { activeStage } = usePipelineTimeline(traceState);
+
+  const loading = traceState === "running";
 
   const submit = async () => {
     if (!question.trim() || loading) return;
-    setLoading(true);
+    setTraceState("running");
     setError(null);
     setResult(null);
     try {
@@ -32,11 +40,11 @@ export function AskForm() {
         top_k: 10,
       });
       setResult(out);
+      setTraceState("done");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
-    } finally {
-      setLoading(false);
+      setTraceState("error");
     }
   };
 
@@ -82,19 +90,21 @@ export function AskForm() {
         </Card>
       )}
 
-      {loading && !result && (
-        <Card>
-          <CardContent className="p-6 text-sm text-(--muted-foreground)">
-            <div className="flex items-center gap-3">
-              <Loader2 className="size-4 animate-spin" />
-              <span>
-                Retrieving and reranking the top chunks, then asking Opus 4.6 to
-                synthesize a cited answer. Usually 8–20 seconds.
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+      {(loading || result) && (
+        <PipelineTrace
+          state={traceState}
+          activeStage={activeStage}
+          filters={{
+            tickers: filters.tickers.length ? filters.tickers : undefined,
+            year: filters.year,
+            quarter: filters.quarter,
+          }}
+          finalModel={result?.model}
+          costUsd={result?.cost_usd ?? null}
+          latencyMs={result?.latency_ms ?? null}
+        />
       )}
+
 
       {result && <AnswerCard result={result} />}
     </div>
