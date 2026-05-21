@@ -1,11 +1,16 @@
-# Nixpacks build config for Railway. Pins Python and tells the builder to
-# install the project via pip (pyproject.toml-aware). Dev dependencies live
-# under [dependency-groups] and are ignored by pip, which is what we want.
+# Nixpacks build config for Railway. Installs project deps with uv (the
+# project's package manager per CLAUDE.md). Avoids the pip-bootstrap problem
+# in Nix's python311: the bare python package ships without pip, and
+# python311Packages.pip only exposes a `pip` binary on PATH, not a pip module
+# importable via `python -m pip`. `uv pip install --system` works against the
+# Nix python311 interpreter directly and is the install path the project
+# already uses locally. Dev dependencies live under [dependency-groups] and
+# are ignored by `pip install .`, which is what we want.
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip", "gcc"]
+nixPkgs = ["python311", "gcc", "uv"]
 
 [phases.install]
-cmds = ["python -m pip install --upgrade pip", "pip install ."]
+cmds = ["uv pip install --system ."]
 
 [start]
 cmd = "uvicorn src.api.server:app --host 0.0.0.0 --port $PORT"
