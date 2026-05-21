@@ -37,12 +37,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
     >
       <head>
-        {/* Anti-FOUC: applies the user's chosen theme (or OS preference) to
-            <html> synchronously, before React hydrates. */}
+        {/* Anti-FOUC: dark mode is the default. Apply `html.dark` synchronously
+            (before React hydrates) unless the user has explicitly chosen light
+            via the header toggle (persisted in localStorage). */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var s=localStorage.getItem('theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(s==='dark'||(s===null&&m)){document.documentElement.classList.add('dark')}}catch(e){}})();",
+              "(function(){try{var s=localStorage.getItem('theme');if(s!=='light'){document.documentElement.classList.add('dark')}}catch(e){document.documentElement.classList.add('dark')}})();",
           }}
         />
       </head>
