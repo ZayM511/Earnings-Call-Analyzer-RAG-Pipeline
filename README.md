@@ -3,7 +3,7 @@
 A hybrid-retrieval RAG system over Mag 7 quarterly earnings call transcripts (Q2 2024 → Q1 2026). Splits transcripts at speaker turns instead of fixed character counts, enriches every chunk with a Claude-extracted hedging score and topic tags, and answers analytical questions like *"Where did Apple's CFO start hedging on guidance?"* or *"Compare how Apple and Google describe China risk."*
 
 > **Loom demo:** (recording pending)
-> **Live demo:** (deploy pending — Vercel URL goes here)
+> **Live demo:** https://earnings-call-analyzer-rag-pipeline.vercel.app
 
 ## UI
 
