@@ -26,6 +26,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg.rows import dict_row
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from src.config import get_settings
 from src.retrieve.filters import RetrievalFilters
@@ -66,6 +68,31 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+# --------------------------------------------------------------------------- #
+# Rate limiting
+# --------------------------------------------------------------------------- #
+
+
+def _client_ip(request: Request) -> str:
+    """Caller IP, preferring the X-Forwarded-For header set by Railway's edge
+    proxy and falling back to the direct connection (local dev, curl)."""
+    forwarded = request.headers.get("x-forwarded-for", "").strip()
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client is not None:
+        return request.client.host
+    return "unknown"
+
+
+# 10 requests per minute per client IP on /api/ask. This sits in front of the
+# dollar-cost ceiling: cheap-token queries that never trip the cost cap can
+# still pin a Railway Hobby container's CPU, so a hard request-frequency cap
+# is the resource-side backstop.
+limiter = Limiter(key_func=_client_ip)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # --------------------------------------------------------------------------- #
@@ -205,23 +232,13 @@ def chunk(chunk_id: int) -> ChunkResponse:
 
 
 def _session_id_from_request(request: Request) -> str:
-    """Pin the per-session cost ceiling to the caller's IP.
-
-    Railway routes through an edge proxy, so prefer the leftmost
-    X-Forwarded-For entry; fall back to the direct connection if the header
-    is absent (local dev, curl).
-    """
-    forwarded = request.headers.get("x-forwarded-for", "").strip()
-    if forwarded:
-        client_ip = forwarded.split(",")[0].strip()
-    elif request.client is not None:
-        client_ip = request.client.host
-    else:
-        client_ip = "unknown"
-    return f"ip:{client_ip}"
+    """Pin the per-session cost ceiling to the same IP key the rate limiter
+    uses, so a single visitor is consistent across both guardrails."""
+    return f"ip:{_client_ip(request)}"
 
 
 @app.post("/api/ask", response_model=AskResponse)
+@limiter.limit("10/minute")
 async def ask(req: AskRequest, request: Request) -> AskResponse:
     """Run the full retrieve + synthesize pipeline and return a cited answer."""
     from anthropic import AsyncAnthropic

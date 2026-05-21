@@ -40,6 +40,10 @@ dependencies = [
     # HTTP API for the Next.js UI
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
+    # Per-IP rate limiting on /api/ask. Sits in front of the cost ceiling so a
+    # single visitor cannot hammer the synthesis endpoint with cheap-token
+    # queries that would never trip the dollar cap but would still pin the CPU.
+    "slowapi>=0.1.9",
 ]
 
 [dependency-groups]
