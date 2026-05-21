@@ -22,7 +22,7 @@ from dataclasses import asdict
 from typing import Any
 
 import psycopg
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg.rows import dict_row
 from pydantic import BaseModel, Field
@@ -204,8 +204,25 @@ def chunk(chunk_id: int) -> ChunkResponse:
     )
 
 
+def _session_id_from_request(request: Request) -> str:
+    """Pin the per-session cost ceiling to the caller's IP.
+
+    Railway routes through an edge proxy, so prefer the leftmost
+    X-Forwarded-For entry; fall back to the direct connection if the header
+    is absent (local dev, curl).
+    """
+    forwarded = request.headers.get("x-forwarded-for", "").strip()
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+    elif request.client is not None:
+        client_ip = request.client.host
+    else:
+        client_ip = "unknown"
+    return f"ip:{client_ip}"
+
+
 @app.post("/api/ask", response_model=AskResponse)
-async def ask(req: AskRequest) -> AskResponse:
+async def ask(req: AskRequest, request: Request) -> AskResponse:
     """Run the full retrieve + synthesize pipeline and return a cited answer."""
     from anthropic import AsyncAnthropic
 
@@ -230,6 +247,7 @@ async def ask(req: AskRequest) -> AskResponse:
             filters=filters,
             candidate_k=req.candidate_k,
             top_k=req.top_k,
+            session_id=_session_id_from_request(request),
         )
 
     return AskResponse(
