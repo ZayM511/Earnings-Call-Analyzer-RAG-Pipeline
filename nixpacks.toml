@@ -1,16 +1,17 @@
-# Nixpacks build config for Railway. Installs project deps with uv (the
-# project's package manager per CLAUDE.md). Avoids the pip-bootstrap problem
-# in Nix's python311: the bare python package ships without pip, and
-# python311Packages.pip only exposes a `pip` binary on PATH, not a pip module
-# importable via `python -m pip`. `uv pip install --system` works against the
-# Nix python311 interpreter directly and is the install path the project
-# already uses locally. Dev dependencies live under [dependency-groups] and
-# are ignored by `pip install .`, which is what we want.
+# Nixpacks build config for Railway. Nix's python311 is PEP-668
+# externally-managed and lives in the read-only /nix/store, so we cannot
+# install packages into it. The standard fix (which uv itself recommends in
+# its error message) is to install into a virtual env. We create /opt/venv,
+# install the project into it, and point the start command at the venv's
+# uvicorn binary directly.
 [phases.setup]
 nixPkgs = ["python311", "gcc", "uv"]
 
 [phases.install]
-cmds = ["uv pip install --system ."]
+cmds = [
+  "uv venv /opt/venv --python python3.11",
+  "uv pip install --python /opt/venv/bin/python ."
+]
 
 [start]
-cmd = "uvicorn src.api.server:app --host 0.0.0.0 --port $PORT"
+cmd = "/opt/venv/bin/uvicorn src.api.server:app --host 0.0.0.0 --port $PORT"
