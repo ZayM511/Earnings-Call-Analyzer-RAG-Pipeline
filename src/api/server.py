@@ -18,13 +18,14 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 from typing import Any
 
-import psycopg
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -38,10 +39,47 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+# Process-wide connection pool. Opened on FastAPI startup via the `lifespan`
+# handler below, closed on shutdown. Endpoints borrow via `_get_pool()`. A
+# fresh psycopg.connect() per request adds ~100-200 ms of TCP+TLS handshake;
+# the pool keeps `min_size` connections warm so subsequent requests skip the
+# handshake. `max_size` caps concurrent in-flight requests holding a
+# connection (Hobby tier: 5 is comfortable headroom).
+_pool: ConnectionPool | None = None
+
+
+def _get_pool() -> ConnectionPool:
+    """Return the open pool; raise if `lifespan` did not initialize it."""
+    if _pool is None:
+        raise RuntimeError("DB connection pool not initialized")
+    return _pool
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Open the connection pool on startup, close it on shutdown."""
+    global _pool
+    _pool = ConnectionPool(
+        conninfo=str(settings.postgres_url),
+        min_size=2,
+        max_size=5,
+        open=False,
+    )
+    _pool.open(wait=True)
+    logger.info("postgres connection pool opened (min=2, max=5)")
+    try:
+        yield
+    finally:
+        _pool.close()
+        _pool = None
+        logger.info("postgres connection pool closed")
+
+
 app = FastAPI(
     title="Earnings Call Analyzer",
     version="0.1.0",
     description="Hybrid RAG over Mag 7 quarterly earnings call transcripts.",
+    lifespan=lifespan,
 )
 
 # Allowed origins: local dev by default. In production set
@@ -173,7 +211,7 @@ def health() -> dict[str, str]:
 @app.get("/api/companies", response_model=list[CallSummary])
 def companies() -> list[CallSummary]:
     """Return the index of available (ticker, year, quarter) calls."""
-    with psycopg.connect(str(settings.postgres_url)) as conn, conn.cursor(row_factory=dict_row) as cur:
+    with _get_pool().connection() as conn, conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
             SELECT ticker, year, quarter, MIN(call_date) AS call_date,
@@ -200,7 +238,7 @@ def companies() -> list[CallSummary]:
 @app.get("/api/chunks/{chunk_id}", response_model=ChunkResponse)
 def chunk(chunk_id: int) -> ChunkResponse:
     """Fetch one chunk by ID; used by citation chips on hover."""
-    with psycopg.connect(str(settings.postgres_url)) as conn, conn.cursor(row_factory=dict_row) as cur:
+    with _get_pool().connection() as conn, conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
             SELECT id, ticker, company, quarter, year, call_date,
@@ -254,7 +292,7 @@ async def ask(req: AskRequest, request: Request) -> AskResponse:
     )
     anthropic_client = AsyncAnthropic(api_key=settings.anthropic_api_key.get_secret_value())
 
-    with psycopg.connect(str(settings.postgres_url)) as conn:
+    with _get_pool().connection() as conn:
         result = await ask_pipeline(
             question=req.question,
             conn=conn,
