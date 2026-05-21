@@ -2,7 +2,7 @@
 # install the project via pip (pyproject.toml-aware). Dev dependencies live
 # under [dependency-groups] and are ignored by pip, which is what we want.
 [phases.setup]
-nixPkgs = ["python311", "gcc"]
+nixPkgs = ["python311", "python311Packages.pip", "gcc"]
 
 [phases.install]
 cmds = ["python -m pip install --upgrade pip", "pip install ."]
