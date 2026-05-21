@@ -1,10 +1,22 @@
 /**
- * Typed client for the FastAPI backend. The server runs at port 8001 in dev
- * (8000 is taken by the sibling NBA project). Override via NEXT_PUBLIC_API_BASE.
+ * Typed client for the FastAPI backend.
+ *
+ * URL resolution precedence:
+ *   1. NEXT_PUBLIC_API_BASE env var (explicit override)
+ *   2. Railway production URL (when NODE_ENV=production, i.e. Vercel build)
+ *   3. http://localhost:8001 (local `next dev`; 8000 is the sibling NBA project)
+ *
+ * Override via ui/.env.local for a staging backend or alternate local port.
  */
 
+const PRODUCTION_API =
+  "https://earnings-call-analyzer-rag-pipeline-production.up.railway.app";
+
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8001";
+  process.env.NEXT_PUBLIC_API_BASE ??
+  (process.env.NODE_ENV === "production"
+    ? PRODUCTION_API
+    : "http://localhost:8001");
 
 export interface Citation {
   ticker: string;
