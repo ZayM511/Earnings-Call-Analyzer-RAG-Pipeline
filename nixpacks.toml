@@ -1,17 +1,15 @@
-# Nixpacks build config for Railway. Nix's python311 is PEP-668
-# externally-managed and lives in the read-only /nix/store, so we cannot
-# install packages into it. The standard fix (which uv itself recommends in
-# its error message) is to install into a virtual env. We create /opt/venv,
-# install the project into it, and point the start command at the venv's
-# uvicorn binary directly.
+# Nixpacks build config for Railway. Uses `uv sync --frozen --no-dev` to
+# install the project from uv.lock, which pins every transitive dependency
+# (124 packages) to an exact version + hash. This gives reproducible builds
+# regardless of Nixpkgs channel drift in Railway's nixpacks image. The Nix
+# python311 is PEP-668 externally-managed and lives in the read-only
+# /nix/store, so `uv sync` creates a venv at /app/.venv instead of trying
+# to write into the system interpreter.
 [phases.setup]
 nixPkgs = ["python311", "gcc", "uv"]
 
 [phases.install]
-cmds = [
-  "uv venv /opt/venv --python python3.11",
-  "uv pip install --python /opt/venv/bin/python ."
-]
+cmds = ["uv sync --frozen --no-dev --python python3.11"]
 
 [start]
-cmd = "/opt/venv/bin/uvicorn src.api.server:app --host 0.0.0.0 --port $PORT"
+cmd = "/app/.venv/bin/uvicorn src.api.server:app --host 0.0.0.0 --port $PORT"
