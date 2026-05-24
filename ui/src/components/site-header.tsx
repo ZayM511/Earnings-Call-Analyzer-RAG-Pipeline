@@ -32,7 +32,7 @@ export function SiteHeader() {
               width={32}
               height={32}
               priority
-              className="size-8 object-contain select-none mix-blend-multiply"
+              className="size-8 object-contain select-none mix-blend-screen invert"
             />
           </span>
           <div className="flex flex-col leading-tight">
